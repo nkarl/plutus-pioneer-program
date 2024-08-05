@@ -4,7 +4,7 @@ volumes:
   node-db:
 services:
   cardano-node:
-    image: robertinoiog/cardano-node:1.35.5-v3
+    image: ghcr.io/intersectmbo/cardano-node:9.1.0
     environment:
       NETWORK: ${NETWORK:-preview}
     volumes:
@@ -16,8 +16,8 @@ services:
         max-size: "200k"
         max-file: "10"
   ppp:
-    image: robertinoiog/plutus-pioneer-program-4:v6
-    # build: .
+    # image: robertinoiog/plutus-pioneer-program-4:v6
+    build: .
     environment:
       NETWORK: ${NETWORK:-preview}
     volumes:

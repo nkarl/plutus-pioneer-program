@@ -85,9 +85,11 @@ FROM haskell as cardano_cli
 
 # install cardano-cli (we use a different docker container for the actual node)
 # (These have to be the same version as the cardano-node image specified at `docker-compose.yml`)
-RUN wget https://github.com/rober-m/cardano-node/releases/download/1.35.5/$(arch)-linux-cardano-cli
-RUN chmod +x $(arch)-linux-cardano-cli
-RUN mv $(arch)-linux-cardano-cli /usr/bin/cardano-cli
+RUN wget https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-cli-9.2.1.0/cardano-cli-9.2.1.0-$(arch)-linux.tar.gz \
+    && tar -xzvf cardano-cli-9.2.1.0-$(arch)-linux.tar.gz \
+    && mv cardano-cli-$(arch)-linux /usr/bin/cardano-cli \
+    && chmod +x /usr/bin/cardano-cli \
+    && rm -rf cardano-cli-9.2.1.0-$(arch)-linux.tar.gz
 
 # node socket
 RUN echo "export CARDANO_NODE_SOCKET_PATH=/root/.cardano/preview/node.socket" >> ~/.bashrc
@@ -127,7 +129,7 @@ FROM nodejs as plutus
 
 RUN git clone https://github.com/input-output-hk/plutus-pioneer-program
 RUN cd plutus-pioneer-program/code && cabal update
-RUN cd plutus-pioneer-program/code && cabal build all
+# RUN cd plutus-pioneer-program/code && cabal build all
 
 RUN echo "alias serve-docs='python3 -m http.server -d /workspace/docs/plutus-docs/haddock/'" >> ~/.bashrc
 RUN echo "source <(cardano-cli --bash-completion-script cardano-cli)" >> ~/.bashrc
@@ -139,7 +141,7 @@ RUN chmod +x rustup-init
 RUN ./rustup-init -y
 
 FROM cargo as deno
-
+RUN apt-get update -y && apt-get install -y cmake
 RUN /root/.cargo/bin/cargo install deno --locked
 
 FROM deno as testing-docs
