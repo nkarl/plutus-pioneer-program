@@ -6,19 +6,12 @@ name="$1"
 collateral="$2"
 txin="$3"
 
-pp="$assets/protocol-parameters.json"
 body="$assets/collect-gift.txbody"
 tx="$assets/collect-gift.tx"
 
-# Query the protocol parameters \
-
-cardano-cli query protocol-parameters \
-    --testnet-magic 2 \
-    --out-file "$pp"
 
 # Build the transaction
-cardano-cli transaction build \
-    --babbage-era \
+cardano-cli conway transaction build \
     --testnet-magic 2 \
     --tx-in "$txin" \
     --tx-in-script-file "$assets/gift.plutus" \
@@ -26,7 +19,6 @@ cardano-cli transaction build \
     --tx-in-redeemer-file "$assets/unit.json" \
     --tx-in-collateral "$collateral" \
     --change-address "$(cat "$keypath/$name.addr")" \
-    --protocol-params-file "$pp" \
     --out-file "$body"
     
 # Sign the transaction
