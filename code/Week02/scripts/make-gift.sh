@@ -14,8 +14,7 @@ cardano-cli address build \
     --out-file "$assets/gift.addr"
 
 # Build the transaction
-cardano-cli transaction build \
-    --babbage-era \
+cardano-cli conway transaction build \
     --testnet-magic 2 \
     --tx-in "$txin" \
     --tx-out "$(cat "$assets/gift.addr") + 3000000 lovelace" \
