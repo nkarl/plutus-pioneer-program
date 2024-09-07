@@ -91,7 +91,7 @@ ARG NODE_VERSION
 FROM haskell AS cardano_cli
 
 # install cardano-cli (we use a different docker container for the actual node)
-RUN wget https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-cli-${CARDANO_CLI_VERSION}/cardano-cli-9.2.1.0-$(arch)-linux.tar.gz \
+RUN wget https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-cli-${CARDANO_CLI_VERSION}/cardano-cli-${CARDANO_CLI_VERSION}-$(arch)-linux.tar.gz \
     && tar -xzvf cardano-cli-${CARDANO_CLI_VERSION}-$(arch)-linux.tar.gz \
     && mv cardano-cli-$(arch)-linux /usr/bin/cardano-cli \
     && chmod +x /usr/bin/cardano-cli \
