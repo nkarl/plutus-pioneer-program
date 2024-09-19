@@ -78,9 +78,6 @@ RUN ghcup config set downloader Wget \
 RUN ghcup set ghc ${GHC_VERSION}
 RUN ghcup install hls ${HLS_VERSION}
 
-# Update cabal
-RUN cabal update
-
 # Add cabal to PATH
 RUN echo "export PATH=$PATH:/root/.cabal/bin" >> ~/.bashrc
 
@@ -134,8 +131,6 @@ RUN npm --version
 FROM nodejs AS plutus
 
 RUN git clone https://github.com/input-output-hk/plutus-pioneer-program
-RUN cd plutus-pioneer-program/code && cabal update
-#RUN cd plutus-pioneer-program/code && cabal build all
 
 RUN echo "alias serve-docs='python3 -m http.server -d /workspace/docs/plutus-docs/haddock/'" >> ~/.bashrc
 RUN echo "source <(cardano-cli --bash-completion-script cardano-cli)" >> ~/.bashrc
@@ -154,3 +149,8 @@ FROM deno AS testing-docs
 
 RUN /root/.cargo/bin/cargo install mdbook
 RUN echo "alias serve-testing-docs='mdbook serve /workspace/docs/psm-docs'" >> ~/.bashrc
+
+# Update cabal
+#RUN cabal update
+#RUN cd plutus-pioneer-program/code && cabal update
+#RUN cd plutus-pioneer-program/code && cabal build all
