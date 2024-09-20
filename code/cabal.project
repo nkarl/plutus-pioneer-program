@@ -113,6 +113,7 @@ package cardano-wallet-core-integration
 --
 -- The current version is dated 2022/08/10
 source-repository-package
+    --sha256: 0i40hp1mdbljjcj4pn3n6zahblkb2jmpm8l4wnb36bya1pzf66fx
     type: git
     location: https://github.com/input-output-hk/cardano-wallet
     tag: 18a931648550246695c790578d4a55ee2f10463e
@@ -130,24 +131,28 @@ source-repository-package
 
 -- Direct dependency.
 source-repository-package
+    --sha256: 10pb0yfp80jhb9ryn65a4rha2lxzsn2vlhcc6xphrrkf4x5lhzqc
     type: git
     location: https://github.com/input-output-hk/servant-purescript
     tag: 44e7cacf109f84984cd99cd3faf185d161826963
 
 -- Direct dependency.
 source-repository-package
+    --sha256: 0da1vn2l6iyfxcjk58qal1l4755v92zi6yppmjmqvxf1gacyf9px
     type: git
     location: https://github.com/input-output-hk/purescript-bridge
     tag: 47a1f11825a0f9445e0f98792f79172efef66c00
 
 -- Direct dependency.
 source-repository-package
+    --sha256: 1b9ppgavqad78a2z1zxv7v4jasjz6zz0mxkr0zx0bbcd0i00jajf
     type: git
     location: https://github.com/input-output-hk/quickcheck-dynamic
     tag: c272906361471d684440f76c297e29ab760f6a1e
 
 -- Should follow cardano-wallet.
 source-repository-package
+    --sha256: 129r5kyiw10n2021bkdvnr270aiiwyq58h472d151ph0r7wpslgp
     type: git
     location: https://github.com/input-output-hk/cardano-addresses
     tag: b7273a5d3c21f1a003595ebf1e1f79c28cd72513
@@ -160,6 +165,7 @@ source-repository-package
 -- This is needed because we rely on an unreleased feature
 -- https://github.com/input-output-hk/cardano-ledger/pull/3111
 source-repository-package
+    --sha256: 1jg1h05gcms119mw7fz798xpj3hr5h426ga934vixmgf88m1jmfx
     type: git
     location: https://github.com/input-output-hk/cardano-ledger
     tag: da3e9ae10cf9ef0b805a046c84745f06643583c2
