@@ -130,7 +130,10 @@ RUN npm --version
 
 FROM nodejs AS plutus
 
-RUN git clone https://github.com/input-output-hk/plutus-pioneer-program
+ARG PPP=plutus-pioneer-program
+RUN mkdir ${PPP} && cd ${PPP} && git init &&\
+  git remote add origin https://github.com/input-output-hk/plutus-pioneer-program &&\
+  git fetch --depth 1
 
 RUN echo "alias serve-docs='python3 -m http.server -d /workspace/docs/plutus-docs/haddock/'" >> ~/.bashrc
 RUN echo "source <(cardano-cli --bash-completion-script cardano-cli)" >> ~/.bashrc
