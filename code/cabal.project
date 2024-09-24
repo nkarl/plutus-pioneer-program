@@ -201,9 +201,10 @@ source-repository-package
     --sha256: 1jg1h05gcms119mw7fz798xpj3hr5h426ga934vixmgf88m1jmfx
 -- end of block
 
--- library for unit tests of Plutus scripts                                                                                       
+-- library for unit tests of Plutus scripts
 source-repository-package
-   type: git                                                                                                                         
-   location: https://github.com/geniusyield/plutus-simple-model
-   tag: d710c4c5400ff7072fe89c337c1cdd0128dc5d99
+    type: git
+    location: https://github.com/geniusyield/plutus-simple-model
+    tag: d710c4c5400ff7072fe89c337c1cdd0128dc5d99
+    --sha256: 16zwqr5qqwrxnawgc2y4q72lny8inac21kxqsip530ravqcc153n
 -- end of block
