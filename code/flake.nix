@@ -20,14 +20,15 @@
     devShell = forAllSystems (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        #pkgs = import nixpkgs { inherit system; } //
-        #{
+        #pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs { inherit system; } //
+        {
           #ghc = import (builtins.fetchGit {
             #name = "ghc-8.10.7";
             #url = "https://github.com/NixOS/nixpkgs/";
             #ref = "refs/heads/nixos-23.05";
-            #rev = "214e2d6bee035e468f9d420be19b6b6d9aa9b027";
+            ##rev = "214e2d6bee035e468f9d420be19b6b6d9aa9b027";
+            #rev = "ed03b7af334826159b6e8a1373858f2844ba8df6";
           #}) {};
           #hls = import (builtins.fetchGit {
             #name = "hls-1.10.0.0";
@@ -47,20 +48,20 @@
             #ref = "refs/heads/nixos-23.05";
             #rev = "ed03b7af334826159b6e8a1373858f2844ba8df6";
           #}) {};
-        #};
+        };
       in
       pkgs.mkShell {
         inherit name;
         buildInputs =
           [
+            pkgs.haskell.compiler.ghc96 # 810
+            pkgs.haskellPackages.haskell-language-server
             #pkgs.ghc
             #pkgs.haskell-language-server
-            #pkgs.haskellPackages.libsodium
             #pkgs.sbclPackages.secp256k1
-            pkgs.haskell.compiler.ghc810
-            pkgs.haskellPackages.haskell-language-server
-            pkgs.libsodium
+            #pkgs.haskellPackages.libsodium
             pkgs.secp256k1
+            pkgs.libsodium
           ];
       }
     );
