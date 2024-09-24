@@ -1,5 +1,9 @@
 ARG UBUNTU_VERSION
+
+
+
 FROM ubuntu:${UBUNTU_VERSION} AS system_deps
+
 ENV DEBIAN_FRONTEND=nonintercative
 RUN mkdir -p /app/src
 WORKDIR /app
@@ -46,6 +50,8 @@ RUN git clone ${BTC_LIBSECP251} &&\
   make && \
   make install  && cd .. && rm -rf ./secp256k1
 
+
+
 FROM system_deps AS haskell
 
 # haskell args
@@ -85,6 +91,9 @@ ARG CARDANO_NODE_VERSION
 ARG CARDANO_CLI_VERSION
 ARG STYLISH_HASKELL_VERSION
 ARG NODE_VERSION
+
+
+
 FROM haskell AS cardano_cli
 
 # install cardano-cli (we use a different docker container for the actual node)
@@ -98,6 +107,8 @@ RUN wget https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-c
 RUN echo "export CARDANO_NODE_SOCKET_PATH=/root/.cardano/preview/node.socket" >> ~/.bashrc
 RUN echo "export NETWORK=preview" >> ~/.bashrc
 
+
+
 FROM cardano_cli AS kuber
 
 # install kuber
@@ -109,12 +120,14 @@ RUN mv $(arch)-linux-kuber /usr/bin/kuber
 FROM kuber AS stylish_haskell
 
 # install stylish-haskell (FIXME: couldn't compile a bin for arm64)
-# RUN wget https://github.com/rober-m/stylish-haskell/releases/download/v0.14.3.0/$(arch)-linux-stylish-haskell
+# RUN wget https://github.com/rober-m/stylish-haskell/releases/download/v${STYLISH_HASKELL_VERSION}/$(arch)-linux-stylish-haskell
 # RUN chmod +x $(arch)-linux-stylish-haskell
 # RUN mv $(arch)-linux-stylish-haskell /usr/bin/stylish-haskell
 RUN wget https://github.com/rober-m/stylish-haskell/releases/download/v${STYLISH_HASKELL_VERSION}/x86_64-linux-stylish-haskell
 RUN chmod +x x86_64-linux-stylish-haskell
 RUN mv x86_64-linux-stylish-haskell /usr/bin/stylish-haskell
+
+
 
 FROM kuber AS nodejs
 
@@ -128,6 +141,8 @@ ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 RUN node --version
 RUN npm --version
 
+
+
 FROM nodejs AS plutus
 
 ARG PPP=plutus-pioneer-program
@@ -138,22 +153,25 @@ RUN mkdir ${PPP} && cd ${PPP} && git init &&\
 RUN echo "alias serve-docs='python3 -m http.server -d /workspace/docs/plutus-docs/haddock/'" >> ~/.bashrc
 RUN echo "source <(cardano-cli --bash-completion-script cardano-cli)" >> ~/.bashrc
 
+
+
 FROM plutus AS cargo
 
 RUN curl https://sh.rustup.rs -sSfo rustup-init
 RUN chmod +x rustup-init
 RUN ./rustup-init -y
 
+
+
 FROM cargo AS deno
 
 RUN /root/.cargo/bin/cargo install deno --locked
 
 FROM deno AS testing-docs
-
 RUN /root/.cargo/bin/cargo install mdbook
 RUN echo "alias serve-testing-docs='mdbook serve /workspace/docs/psm-docs'" >> ~/.bashrc
 
-# Update cabal
-#RUN cabal update
-#RUN cd plutus-pioneer-program/code && cabal update
-#RUN cd plutus-pioneer-program/code && cabal build all
+## Update cabal
+# RUN cabal update
+# RUN cd plutus-pioneer-program/code && cabal update
+# RUN cd plutus-pioneer-program/code && cabal build all
