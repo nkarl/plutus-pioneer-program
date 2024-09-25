@@ -1,39 +1,39 @@
 #!/bin/bash
 
-assets=/workspace/code/Week02/assets
-keypath=/workspace/keys
-name="$1"
-txin="$2"
-body="$assets/gift.txbody"
-tx="$assets/gift.tx"
+ASSETS=/workspace/code/Week02/assets
+KEYS=/workspace/keys
+NAME="$1"
+TXIN="$2"
+BODY="$ASSETS/gift.txbody"
+TX="$ASSETS/gift.tx"
 
 # Build gift address 
 cardano-cli address build \
-    --payment-script-file "$assets/gift.plutus" \
+    --payment-script-file "$ASSETS/gift.plutus" \
     --testnet-magic 2 \
-    --out-file "$assets/gift.addr"
+    --out-file "$ASSETS/gift.addr"
 
 # Build the transaction
 cardano-cli conway transaction build \
     --testnet-magic 2 \
-    --tx-in "$txin" \
-    --tx-out "$(cat "$assets/gift.addr") + 3000000 lovelace" \
-    --tx-out-inline-datum-file "$assets/unit.json" \
-    --change-address "$(cat "$keypath/$name.addr")" \
-    --out-file "$body"
+    --tx-in "$TXIN" \
+    --tx-out "$(cat "$ASSETS/gift.addr") + 3000000 lovelace" \
+    --tx-out-inline-datum-file "$ASSETS/unit.json" \
+    --change-address "$(cat "$KEYS/$NAME.addr")" \
+    --out-file "$BODY"
     
 # Sign the transaction
 cardano-cli transaction sign \
-    --tx-body-file "$body" \
-    --signing-key-file "$keypath/$name.skey" \
+    --tx-body-file "$BODY" \
+    --signing-key-file "$KEYS/$NAME.skey" \
     --testnet-magic 2 \
-    --out-file "$tx"
+    --out-file "$TX"
 
 # Submit the transaction
 cardano-cli transaction submit \
     --testnet-magic 2 \
-    --tx-file "$tx"
+    --tx-file "$TX"
 
-tid=$(cardano-cli transaction txid --tx-file "$tx")
-echo "transaction id: $tid"
-echo "Cardanoscan: https://preview.cardanoscan.io/transaction/$tid"
+TXID=$(cardano-cli transaction txid --tx-file "$TX")
+echo "transaction id: $TXID"
+echo "Cardanoscan: https://preview.cardanoscan.io/transaction/$TXID"
