@@ -11,3 +11,5 @@ code/Week08/assets/staking.plutus
 .DS_Store
 
 **/.archive/
+
+**/deps/
