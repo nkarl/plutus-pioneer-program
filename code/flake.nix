@@ -35,6 +35,8 @@
           shellHook = ''
           export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
           export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+          export PATH="/home/$(whoami)/.cardano/node/latest/bin:$PATH"
+          export CARDANO_NODE_SOCKET_PATH="/home/$(whoami)/DataStore/cardano/preview/db/socket"
         '';
 
         LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
