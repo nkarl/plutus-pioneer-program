@@ -16,10 +16,11 @@ import           Utilities            (wrapValidator)
 {-# INLINABLE mkValidator #-}
 -- This should validate if and only if the two Booleans in the redeemer are True!
 mkValidator :: () -> (Bool, Bool) -> PlutusV2.ScriptContext -> Bool
+mkValidator _ (True, True) _ = True
 mkValidator _ _ _ = False
 
-wrappedVal :: BuiltinData -> BuiltinData -> BuiltinData -> ()
-wrappedVal = wrapValidator mkValidator
+e :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+e = wrapValidator mkValidator
 
 validator :: PlutusV2.Validator
-validator = PlutusV2.mkValidatorScript $$(PlutusTx.compile [|| wrappedVal ||])
+validator = PlutusV2.mkValidatorScript $$(PlutusTx.compile [|| e ||])

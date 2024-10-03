@@ -31,7 +31,8 @@ makeLift ''VestingParams
 {-# INLINABLE mkParameterizedVestingValidator #-}
 mkParameterizedVestingValidator :: VestingParams -> () -> () -> ScriptContext -> Bool
 mkParameterizedVestingValidator params () () ctx =
-    traceIfFalse "beneficiary's signature missing" signedByBeneficiary &&
+    traceIfFalse "beneficiary's signature missing" signedByBeneficiary
+    &&
     traceIfFalse "deadline not reached" deadlineReached
   where
     info :: TxInfo
@@ -43,12 +44,12 @@ mkParameterizedVestingValidator params () () ctx =
     deadlineReached :: Bool
     deadlineReached = contains (from $ deadline params) $ txInfoValidRange info
 
-{-# INLINABLE  mkWrappedParameterizedVestingValidator #-}
-mkWrappedParameterizedVestingValidator :: VestingParams -> BuiltinData -> BuiltinData -> BuiltinData -> ()
-mkWrappedParameterizedVestingValidator = wrapValidator . mkParameterizedVestingValidator
+{-# INLINABLE  e #-}
+e :: VestingParams -> BuiltinData -> BuiltinData -> BuiltinData -> ()
+e = wrapValidator . mkParameterizedVestingValidator
 
 validator :: VestingParams -> Validator
-validator params = mkValidatorScript ($$(compile [|| mkWrappedParameterizedVestingValidator ||]) `applyCode` liftCode params)
+validator params = mkValidatorScript ($$(compile [|| e ||]) `applyCode` liftCode params)
 
 ---------------------------------------------------------------------------------------------------
 ------------------------------------- HELPER FUNCTIONS --------------------------------------------

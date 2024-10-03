@@ -106,6 +106,8 @@ package cardano-wallet-launcher
   optimization: False
 package cardano-wallet-core-integration
   optimization: False
+package uplc
+  optimization: False
 
 -- Direct dependency.
 -- Compared to others, cardano-wallet doesn't bump dependencies very often.

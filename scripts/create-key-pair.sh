@@ -5,7 +5,8 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-path=/workspace/keys
+#path=/workspace/keys
+path=${WORKSPACE}/keys # changed to match nix env.
 mkdir -p "$path"
 
 vkey="$path/$1.vkey"

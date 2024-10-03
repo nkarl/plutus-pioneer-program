@@ -3,9 +3,9 @@
 
   inputs =
   {
-    #haskellNix.url = "github:input-output-hk/haskell.nix";
-    #nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    haskellNix.url = "github:input-output-hk/haskell.nix";
+    nixpkgs.follows = "haskellNix/nixpkgs-unstable";
+    #nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     flake-compat.url = "github:edolstra/flake-compat";
     flake-compat.flake = false;
   };
@@ -27,16 +27,20 @@
         inherit name;
         buildInputs =
           [
-            pkgs.haskell.compiler.ghc810
+            pkgs.haskell.compiler.ghc8107
+            pkgs.cabal-install
+            pkgs.stack
             pkgs.haskellPackages.haskell-language-server
             pkgs.zlib
+            pkgs.python311Packages.uplc
           ];
 
           shellHook = ''
           export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
           export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
           export PATH="/home/$(whoami)/.cardano/node/latest/bin:$PATH"
-          export CARDANO_NODE_SOCKET_PATH="/home/$(whoami)/DataStore/cardano/preview/db/socket"
+          export WORKSPACE=$(dirname $(pwd))
+          export CARDANO_NODE_SOCKET_PATH="$WORKSPACE/.cardano-db-sync/current/socket"
         '';
 
         LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";

@@ -11,7 +11,9 @@ code/Week08/assets/staking.plutus
 .DS_Store
 
 **/.archive/
-
 **/deps/
-
 **/tags
+
+.cardano-db-sync
+**/**.raw
+**/**.signed
