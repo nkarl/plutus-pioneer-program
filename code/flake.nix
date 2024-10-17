@@ -33,13 +33,14 @@
             pkgs.haskellPackages.haskell-language-server
             pkgs.zlib
             pkgs.python311Packages.uplc
+            pkgs.nodejs_22
           ];
 
           shellHook = ''
           export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
           export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
           export PATH="/home/$(whoami)/.cardano/node/latest/bin:$PATH"
-          export WORKSPACE=$(dirname $(pwd))
+          export WORKSPACE=$(pwd)
           export CARDANO_NODE_SOCKET_PATH="$WORKSPACE/.cardano-db-sync/current/socket"
         '';
 

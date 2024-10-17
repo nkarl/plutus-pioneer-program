@@ -8,59 +8,63 @@
 module Homework1 where
 
 import           Plutus.V1.Ledger.Interval (before, after)
-import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTime, PubKeyHash,
+import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTimeRange, POSIXTime, PubKeyHash,
                                        ScriptContext (scriptContextTxInfo),
-                                       TxInfo (txInfoValidRange), from,
+                                       TxInfo (txInfoValidRange),
                                        Validator, mkValidatorScript)
 import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import           PlutusTx             (compile, unstableMakeIsData)
-import           PlutusTx.Prelude     (Bool (..), traceIfFalse, ($), (&&), (||))
+import           PlutusTx.Prelude     (Bool (..), traceIfFalse, ($), (&&), (||), flip, (.))
 import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------
 ----------------------------------- ON-CHAIN / VALIDATOR ------------------------------------------
 
+-- data State = State
 data VestingDatum = VestingDatum
     { beneficiary1 :: PubKeyHash
     , beneficiary2 :: PubKeyHash
     , deadline     :: POSIXTime
     }
 
+-- unstableMakeIsData ''State
 unstableMakeIsData ''VestingDatum
 
-{-# INLINABLE mkVestingValidator #-}
+{-# INLINABLE mkValidator #-}
 -- This should validate if
 --  - either  beneficiary1 has signed the transaction and the current slot is before or at the deadline
 --  - or      beneficiary2 has signed the transaction and the deadline has passed.
-mkVestingValidator :: VestingDatum -> () -> ScriptContext -> Bool
-mkVestingValidator contractDetails () ctx =
-    ((traceIfFalse "beneficiary 1's signature missing" $ isSigned $ beneficiary1 contractDetails)
-    &&
-    traceIfFalse "deadline is passed" isBeforeDeadline)
+mkValidator :: VestingDatum -> () -> ScriptContext -> Bool
+mkValidator contract () ctx =
+    ((traceIfFalse "beneficiary 1's signature missing" $ isSigned $ beneficiary1 contract)
+        &&
+        traceIfFalse "deadline is passed" (isNotAfterDeadline contract)
+      )
     ||
-    ((traceIfFalse "beneficiary 2's signature missing" $ isSigned $ beneficiary2 contractDetails)
-    &&
-    traceIfFalse "deadline is not reached" isAfterDeadline)
+    ((traceIfFalse "beneficiary 2's signature missing" $ isSigned $ beneficiary2 contract)
+        &&
+        traceIfFalse "deadline is not reached" (isAfterDeadline contract)
+      )
   where
-    finalDate = deadline contractDetails
-    validRange = txInfoValidRange info
-
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
+    validRange :: POSIXTimeRange
+    validRange = txInfoValidRange info
+
     isSigned :: PubKeyHash -> Bool
-    isSigned k = txSignedBy info $ k
+    isSigned = txSignedBy info
 
-    isBeforeDeadline :: Bool
-    isBeforeDeadline = finalDate `after` validRange
+    isNotAfterDeadline :: VestingDatum -> Bool
+    isNotAfterDeadline = (flip after validRange) . deadline
 
-    isAfterDeadline :: Bool
-    isAfterDeadline = finalDate `before` validRange
+    isAfterDeadline :: VestingDatum -> Bool
+    isAfterDeadline = (flip before validRange) . deadline
 
 
 {-# INLINABLE  e #-}
 e :: BuiltinData -> BuiltinData -> BuiltinData -> ()
-e = wrapValidator mkVestingValidator
+e = wrapValidator mkValidator
 
 validator :: Validator
 validator = mkValidatorScript $$(compile [|| e ||])

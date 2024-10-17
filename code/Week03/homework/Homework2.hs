@@ -7,29 +7,33 @@
 
 module Homework2 where
 
-import           Plutus.V1.Ledger.Interval (contains)
+import           Plutus.V1.Ledger.Interval (contains, after, before)
 import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTime, PubKeyHash,
                                        ScriptContext (scriptContextTxInfo), Validator,
                                        TxInfo (txInfoValidRange),
                                        from, mkValidatorScript)
 import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import           PlutusTx             (applyCode, compile, liftCode, makeLift)
-import           PlutusTx.Prelude     (Bool (..), (.), ($), (&&), traceIfFalse)
+import           PlutusTx.Prelude     (Bool (..), (.), ($), (&&), traceIfFalse, flip)
 import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------
 ----------------------------------- ON-CHAIN / VALIDATOR ------------------------------------------
 
+-- data State = State
 data VestingDatum = VestingDatum
     { beneficiary1 :: PubKeyHash
     , beneficiary2 :: PubKeyHash
     , deadline     :: POSIXTime
     }
 
+-- makeLift ''State
 makeLift ''VestingDatum
 
 {-# INLINABLE mkParameterizedVestingValidator #-}
--- This should validate if the transaction has a signature from the parameterized beneficiary and the deadline has passed.
+-- This should validate if the transaction has
+--  - both  a signature from the parameterized beneficiary
+--  - and   the deadline has passed.
 mkParameterizedVestingValidator :: PubKeyHash -> POSIXTime -> () -> ScriptContext -> Bool
 mkParameterizedVestingValidator _beneficiary _deadline () _ctx =
     (traceIfFalse "beneficiary's signature missing" $ isSigned _beneficiary)
@@ -40,10 +44,12 @@ mkParameterizedVestingValidator _beneficiary _deadline () _ctx =
     info = scriptContextTxInfo _ctx
 
     isSigned :: PubKeyHash -> Bool
-    isSigned k = txSignedBy info $ k
+    isSigned = txSignedBy info
 
     deadlineReached :: Bool
     deadlineReached = (from $ _deadline) `contains` txInfoValidRange info
+    --deadlineReached = _deadline `before` txInfoValidRange info  -- BUG: not working
+    --deadlineReached = (flip after (txInfoValidRange info)) _deadline -- BUG: not working
 
 {-# INLINABLE  e #-}
 e :: PubKeyHash -> BuiltinData -> BuiltinData -> BuiltinData -> ()

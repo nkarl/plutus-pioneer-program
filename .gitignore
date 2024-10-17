@@ -1,6 +1,6 @@
 keys/
 code/Week02/assets/*.tx*
-node_modules/
+**/**/node_modules/
 dist/
 dist-newstyle/
 code/Week05/lecture/secret.ts
