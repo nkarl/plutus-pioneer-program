@@ -29,11 +29,8 @@
           [
             pkgs.haskell.compiler.ghc8107
             pkgs.cabal-install
-            pkgs.stack
             pkgs.haskellPackages.haskell-language-server
-            pkgs.zlib
             pkgs.python311Packages.uplc
-            pkgs.nodejs_22
           ];
 
           shellHook = ''

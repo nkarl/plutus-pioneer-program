@@ -14,13 +14,13 @@ import qualified Homework2                     as H2
 
 type Homework1Script = TypedValidator H1.VestingDatum ()
 
-addrContract1 :: Homework1Script
-addrContract1 = TypedValidator $ toV2 H1.validator
+addrCtx1 :: Homework1Script
+addrCtx1 = TypedValidator $ toV2 H1.validator
 
 type Homework2Script = TypedValidator POSIXTime ()
 
-addrContract2 :: PubKeyHash -> Homework2Script
-addrContract2 = TypedValidator . toV2 . H2.validator
+addrCtx2 :: PubKeyHash -> Homework2Script
+addrCtx2 = TypedValidator . toV2 . H2.validator
 
 setupUsers :: Run [PubKeyHash]
 setupUsers = replicateM 3 $ newUser $ ada (Lovelace 1000)
@@ -94,7 +94,7 @@ testHomework1 patronSig claimantSig contractInfo startT endT wSlot = do
 
   -- NOTE: 1. Spender sets up the contract.
   let amount          = adaValue 100
-      contractBalance = gives patronSig amount addrContract1
+      contractBalance = gives patronSig amount addrCtx1
   checkBalance contractBalance $ do
     sp <- spend patronSig amount                            -- NOTE creates a spending action, and
     submitTx patronSig (vestingTx1 contractInfo sp amount)  -- NOTE submit Tx with patron's sig.
@@ -104,11 +104,10 @@ testHomework1 patronSig claimantSig contractInfo startT endT wSlot = do
   waitNSlots wSlot
 
   -- NOTE: 2. Claimant attempts to claim the contract.
-  --
-  utxos <- utxoAt addrContract1                       -- NOTE now the claimant looks up the utxo at the contract address.
+  utxos <- utxoAt addrCtx1                       -- NOTE now the claimant looks up the utxo at the contract address.
   let [(vestRef, vestOut)]  = utxos
       claimantBalance       = gives                   -- NOTE defines the action to claim/give the contract
-                                addrContract1
+                                addrCtx1
                                 (txOutValue vestOut)
                                 claimantSig
 
@@ -126,13 +125,13 @@ vestingTx1 :: H1.VestingDatum -> UserSpend -> Value -> Tx                 -- NOT
 vestingTx1 contractInfo usp amount =
   mconcat -- the eleemnts are folded into a single Tx.
     [ userSpend usp
-    , payToScript addrContract1 (HashDatum contractInfo) amount
+    , payToScript addrCtx1 (HashDatum contractInfo) amount
     ]
 
 claimingTx1 :: PubKeyHash -> H1.VestingDatum -> TxOutRef -> Value -> Tx   -- NOTE defines the claiming part of the contract
 claimingTx1 key contractInfo vestRef vestAmount =
   mconcat -- the elements are folded into a single Tx.
-    [ spendScript addrContract1 vestRef () contractInfo
+    [ spendScript addrCtx1 vestRef () contractInfo
     , payToKey key vestAmount
     ]
 
@@ -160,13 +159,13 @@ testHomework2 contractInfo startT endT wSlot = do
   let [u1, u2, _u3] = users
       amount = adaValue 100
 
-  checkBalance (gives u1 amount $ addrContract2 u2) $ do
+  checkBalance (gives u1 amount $ addrCtx2 u2) $ do
     spending <- spend u1 amount
     submitTx u1 $ vestingTx2 u2 contractInfo spending amount
   waitNSlots wSlot
-  utxos <- utxoAt $ addrContract2 u2
+  utxos <- utxoAt $ addrCtx2 u2
   let [(vestRef, vestOut)] = utxos
-  checkBalance (gives (addrContract2 u2) (txOutValue vestOut) u2) $ do
+  checkBalance (gives (addrCtx2 u2) (txOutValue vestOut) u2) $ do
     range <- currentTimeInterval startT endT
     tx <- validateIn range $ claimingTx2 u2 contractInfo vestRef (txOutValue vestOut)
     submitTx u2 tx
@@ -175,12 +174,12 @@ vestingTx2 :: PubKeyHash -> POSIXTime -> UserSpend -> Value -> Tx
 vestingTx2 key contractInfo usp amount =
   mconcat
     [ userSpend usp
-    , payToScript (addrContract2 key) (HashDatum contractInfo) amount
+    , payToScript (addrCtx2 key) (HashDatum contractInfo) amount
     ]
 
 claimingTx2 :: PubKeyHash -> POSIXTime -> TxOutRef -> Value -> Tx
 claimingTx2 claimantSig contractInfo vestRef vestAmount =
   mconcat
-    [ spendScript (addrContract2 claimantSig) vestRef () contractInfo
+    [ spendScript (addrCtx2 claimantSig) vestRef () contractInfo
     , payToKey claimantSig vestAmount
     ]

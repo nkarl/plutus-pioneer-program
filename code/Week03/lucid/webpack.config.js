@@ -1,6 +1,9 @@
-const path = require('path');
+const Path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const { ProvidePlugin } = require('webpack');
+const dotenv = require('dotenv-webpack');
 
 module.exports = {
     experiments: {
@@ -23,11 +26,16 @@ module.exports = {
             patterns: [{
                 from: 'static'
             }]
-        })
+        }),
+        new NodePolyfillPlugin(),
+        new ProvidePlugin({
+            process: 'process/browser'
+        }),
+        new dotenv(),
     ],
     output: {
         filename: 'main.js',
-        path: path.resolve(__dirname, 'dist'),
+        path: Path.resolve(__dirname, 'dist'),
         clean: true,
     },
     module: {
@@ -40,8 +48,8 @@ module.exports = {
     },
     resolve: {
         alias: {
-            'jquery': path.join(__dirname, 'node_modules/jquery/src/jquery')
-        }
+            'jquery': Path.join(__dirname, 'node_modules/jquery/src/jquery')
+        },
     }
 };
 

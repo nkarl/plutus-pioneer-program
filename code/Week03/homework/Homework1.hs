@@ -20,14 +20,14 @@ import           Utilities            (wrapValidator)
 ---------------------------------------------------------------------------------------------------
 ----------------------------------- ON-CHAIN / VALIDATOR ------------------------------------------
 
--- data State = State
+-- data Requirements = Requirements
 data VestingDatum = VestingDatum
     { beneficiary1 :: PubKeyHash
     , beneficiary2 :: PubKeyHash
     , deadline     :: POSIXTime
     }
 
--- unstableMakeIsData ''State
+-- unstableMakeIsData ''Requirements
 unstableMakeIsData ''VestingDatum
 
 {-# INLINABLE mkValidator #-}
@@ -37,29 +37,25 @@ unstableMakeIsData ''VestingDatum
 mkValidator :: VestingDatum -> () -> ScriptContext -> Bool
 mkValidator contract () ctx =
     ((traceIfFalse "beneficiary 1's signature missing" $ isSigned $ beneficiary1 contract)
-        &&
-        traceIfFalse "deadline is passed" (isNotAfterDeadline contract)
-      )
+        && traceIfFalse "deadline is passed" (isNotAfterDeadline contract))
     ||
     ((traceIfFalse "beneficiary 2's signature missing" $ isSigned $ beneficiary2 contract)
-        &&
-        traceIfFalse "deadline is not reached" (isAfterDeadline contract)
-      )
+        && traceIfFalse "deadline is not reached" (isAfterDeadline contract))
   where
-    info :: TxInfo
-    info = scriptContextTxInfo ctx
+    ctxInfo :: TxInfo
+    ctxInfo = scriptContextTxInfo ctx
 
-    validRange :: POSIXTimeRange
-    validRange = txInfoValidRange info
+    range :: POSIXTimeRange
+    range = txInfoValidRange ctxInfo
 
     isSigned :: PubKeyHash -> Bool
-    isSigned = txSignedBy info
+    isSigned = txSignedBy ctxInfo
 
     isNotAfterDeadline :: VestingDatum -> Bool
-    isNotAfterDeadline = (flip after validRange) . deadline
+    isNotAfterDeadline = (flip after range) . deadline
 
     isAfterDeadline :: VestingDatum -> Bool
-    isAfterDeadline = (flip before validRange) . deadline
+    isAfterDeadline = (flip before range) . deadline
 
 
 {-# INLINABLE  e #-}

@@ -7,27 +7,27 @@
 
 module Homework2 where
 
-import           Plutus.V1.Ledger.Interval (contains, after, before)
+import           Plutus.V1.Ledger.Interval (contains)--, after, before)
 import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTime, PubKeyHash,
                                        ScriptContext (scriptContextTxInfo), Validator,
                                        TxInfo (txInfoValidRange),
                                        from, mkValidatorScript)
 import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import           PlutusTx             (applyCode, compile, liftCode, makeLift)
-import           PlutusTx.Prelude     (Bool (..), (.), ($), (&&), traceIfFalse, flip)
+import           PlutusTx.Prelude     (Bool (..), (.), ($), (&&), traceIfFalse)
 import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------
 ----------------------------------- ON-CHAIN / VALIDATOR ------------------------------------------
 
--- data State = State
+-- data Requirements = Requirements
 data VestingDatum = VestingDatum
     { beneficiary1 :: PubKeyHash
     , beneficiary2 :: PubKeyHash
     , deadline     :: POSIXTime
     }
 
--- makeLift ''State
+-- makeLift ''Requirements
 makeLift ''VestingDatum
 
 {-# INLINABLE mkParameterizedVestingValidator #-}

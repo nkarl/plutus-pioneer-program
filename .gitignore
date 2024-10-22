@@ -17,3 +17,5 @@ code/Week08/assets/staking.plutus
 .cardano-db-sync
 **/**.raw
 **/**.signed
+**/.env
+**/.bak/
