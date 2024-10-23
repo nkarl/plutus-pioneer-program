@@ -22,8 +22,8 @@ import           Utilities            (wrapValidator)
 
 -- data Requirements = Requirements
 data VestingDatum = VestingDatum
-    { beneficiary1 :: PubKeyHash
-    , beneficiary2 :: PubKeyHash
+    { stakeholder1 :: PubKeyHash
+    , stakeholder2 :: PubKeyHash
     , deadline     :: POSIXTime
     }
 
@@ -32,11 +32,11 @@ makeLift ''VestingDatum
 
 {-# INLINABLE mkParameterizedVestingValidator #-}
 -- This should validate if the transaction has
---  - both  a signature from the parameterized beneficiary
+--  - both  a signature from the parameterized stakeholder
 --  - and   the deadline has passed.
 mkParameterizedVestingValidator :: PubKeyHash -> POSIXTime -> () -> ScriptContext -> Bool
-mkParameterizedVestingValidator _beneficiary _deadline () ctx =
-    (traceIfFalse "beneficiary's signature missing" $ isSigned _beneficiary)
+mkParameterizedVestingValidator _stakeholder _deadline () ctx =
+    (traceIfFalse "stakeholder's signature missing" $ isSigned _stakeholder)
     &&
     traceIfFalse "deadline not reached" deadlineReached
   where
@@ -56,6 +56,6 @@ e :: PubKeyHash -> BuiltinData -> BuiltinData -> BuiltinData -> ()
 e = wrapValidator . mkParameterizedVestingValidator
 
 validator :: PubKeyHash -> Validator
-validator beneficiary = mkValidatorScript ($$(compile [|| e ||]) <**> liftCode beneficiary)
+validator stakeholder = mkValidatorScript ($$(compile [|| e ||]) <**> liftCode stakeholder)
   where
     (<**>) = applyCode

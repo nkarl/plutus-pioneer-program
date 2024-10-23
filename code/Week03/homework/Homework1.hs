@@ -22,8 +22,8 @@ import           Utilities            (wrapValidator)
 
 -- data Requirements = Requirements
 data VestingDatum = VestingDatum
-    { beneficiary1 :: PubKeyHash
-    , beneficiary2 :: PubKeyHash
+    { stakeholder1 :: PubKeyHash
+    , stakeholder2 :: PubKeyHash
     , deadline     :: POSIXTime
     }
 
@@ -32,14 +32,14 @@ unstableMakeIsData ''VestingDatum
 
 {-# INLINABLE mkValidator #-}
 -- This should validate if
---  - either  beneficiary1 has signed the transaction and the current slot is before or at the deadline
---  - or      beneficiary2 has signed the transaction and the deadline has passed.
+--  - either  stakeholder1 has signed the transaction and the current slot is before or at the deadline
+--  - or      stakeholder2 has signed the transaction and the deadline has passed.
 mkValidator :: VestingDatum -> () -> ScriptContext -> Bool
 mkValidator contract () ctx =
-    ((traceIfFalse "beneficiary 1's signature missing" $ isSigned $ beneficiary1 contract)
+    ((traceIfFalse "stakeholder 1's signature missing" $ isSigned $ stakeholder1 contract)
         && traceIfFalse "deadline is passed" (isNotAfterDeadline contract))
     ||
-    ((traceIfFalse "beneficiary 2's signature missing" $ isSigned $ beneficiary2 contract)
+    ((traceIfFalse "stakeholder 2's signature missing" $ isSigned $ stakeholder2 contract)
         && traceIfFalse "deadline is not reached" (isAfterDeadline contract))
   where
     ctxInfo :: TxInfo
