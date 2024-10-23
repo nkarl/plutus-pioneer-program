@@ -24,12 +24,14 @@ const VestingDatum = L.Data.Object({
 });
 
 /**
- * loads the nami wallet. Requires blockfrost api credentials.
+ * loads the nami wallet. Requires
+ *  - Nami walllet chrome extension installed.
+ *  - Blockfrost API credentials.
  */
-async function loadNamiWallet() {
+async function connectNamiWallet() {
     const namiWallet = window.cardano.nami;
     if (!namiWallet) {
-        setTimeout(loadNamiWallet);
+        setTimeout(connectNamiWallet);
     } else {
         const api = await namiWallet.enable();
         /* DEBUG */ console.log('show nami enabled');
@@ -72,8 +74,14 @@ async function getCardanoPKH() {
     return details.paymentCredential.hash;
 }
 
-// NOTE Tx action
-async function getStatus() {
+/**
+ * - queries the wallet information:
+ *   - Pub key hash
+ *   - UTxOs at the wallet address
+ * - map+reduce the total fund in Lovelace at from the UTxOs
+ *   - 
+ */
+async function queryWalletInfo() {
     const pkh = await getCardanoPKH();
     const utxos = await lucid.wallet.getUtxos();
     /* DEBUG */ console.log("show details of utxos from pkh");
@@ -136,8 +144,8 @@ function removeChildren(elt) {
 }
 
 // NOTE Tx table action
-async function setStatus() {
-    const status = await getStatus();
+async function loadWalletUI() {
+    const status = await queryWalletInfo();
 
     const cardanoPKH = document.getElementById('cardanoPKH');
     removeChildren(cardanoPKH);
@@ -162,24 +170,29 @@ async function setStatus() {
     }
 }
 
+/**
+ * retrieves all valid (containing a datum) UTxOs at the smart contract address.
+ */
 async function vestingUTxOs() {
     const utxos = await lucid.utxosAt(vestingAddress);
     /* DEBUG */ console.log("show detailed utxos from the contract addr");
     /* DEBUG */ console.log(utxos);
-    const res = [];
+    //const unresolved = utxos.filter(x => x !== undefined).map(x => { utxo: x.utxo; datum: (x) => L.Data.from(x, VestingDatum) });
+    //const res = await Promise.all(unresolved);
+    let res = [];
     for (const utxo of utxos) {
         const datum = utxo.datum;
         if (datum) {
             try {
                 const d = L.Data.from(datum, VestingDatum);
-                res.push({
-                    utxo: utxo,
-                    datum: d
-                });
+                res.push({ utxo: utxo, datum: d });
             } catch (err) {
+              console.log("error: unable to convert from CBOR object (could be a Map object)");
             }
         }
     }
+    /* DEBUG */ console.log("show detailed _valid_ utxos from the contract addr");
+    /* DEBUG */ console.log(res);
     return res;
 }
 
@@ -248,11 +261,14 @@ function onCopy(elt) {
 }
 
 window.L = L;
-/* DEBUG */ console.log("show window.L (Lucid) API object");
-/* DEBUG */ console.log(window.L);
-window.lucid = await loadNamiWallet();
-/* DEBUG */ console.log("show window.lucid object with Nami wallet enabled");
-/* DEBUG */ console.log(window.lucid);
+// console.log("show window.L (Lucid) API object");
+// console.log(window.L);
+
+// NOTE: 1. connect wallet
+window.lucid = await connectNamiWallet();
+// console.log("show window.lucid object with Nami wallet enabled");
+// console.log(window.lucid);
+
 const vestingAddress = lucid.utils.validatorToAddress(vestingScript);
 
 $(function() {
@@ -263,9 +279,11 @@ $(function() {
     });
 });
 
-setStatus();
-//setInterval(setStatus, 5000); NOTE: disabled to prevent flooding request cap of blockfrost api.
+// NOTE: 2. load UI
+loadWalletUI();
+//setInterval(loadWalletUI, 5000); // NOTE disabled to prevent flooding request cap of blockfrost api.
 
+// NOTE: 3. hook up button actions for vesting, claiming, and copying PKH
 document.getElementById("vestButton").addEventListener("click", onVest);
 document.getElementById("claimButton").addEventListener("click", onClaim);
 document.getElementById('cardanoPKHButton').addEventListener("click", () => onCopy("cardanoPKH"));

@@ -35,25 +35,27 @@ makeLift ''VestingDatum
 --  - both  a signature from the parameterized beneficiary
 --  - and   the deadline has passed.
 mkParameterizedVestingValidator :: PubKeyHash -> POSIXTime -> () -> ScriptContext -> Bool
-mkParameterizedVestingValidator _beneficiary _deadline () _ctx =
+mkParameterizedVestingValidator _beneficiary _deadline () ctx =
     (traceIfFalse "beneficiary's signature missing" $ isSigned _beneficiary)
     &&
     traceIfFalse "deadline not reached" deadlineReached
   where
-    info :: TxInfo
-    info = scriptContextTxInfo _ctx
+    ctxInfo :: TxInfo
+    ctxInfo = scriptContextTxInfo ctx
 
     isSigned :: PubKeyHash -> Bool
-    isSigned = txSignedBy info
+    isSigned = txSignedBy ctxInfo
 
     deadlineReached :: Bool
-    deadlineReached = (from $ _deadline) `contains` txInfoValidRange info
-    --deadlineReached = _deadline `before` txInfoValidRange info  -- BUG: not working
-    --deadlineReached = (flip after (txInfoValidRange info)) _deadline -- BUG: not working
+    deadlineReached = (from $ _deadline) `contains` txInfoValidRange ctxInfo
+    --deadlineReached = _deadline `before` txInfoValidRange ctxInfo  -- BUG: not working
+    --deadlineReached = (flip after (txInfoValidRange ctxInfo)) _deadline -- BUG: not working
 
 {-# INLINABLE  e #-}
 e :: PubKeyHash -> BuiltinData -> BuiltinData -> BuiltinData -> ()
 e = wrapValidator . mkParameterizedVestingValidator
 
 validator :: PubKeyHash -> Validator
-validator beneficiary = mkValidatorScript ($$(compile [|| e ||]) `applyCode` liftCode beneficiary)
+validator beneficiary = mkValidatorScript ($$(compile [|| e ||]) <**> liftCode beneficiary)
+  where
+    (<**>) = applyCode

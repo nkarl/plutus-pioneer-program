@@ -14,13 +14,13 @@ import qualified Homework2                     as H2
 
 type Homework1Script = TypedValidator H1.VestingDatum ()
 
-addrCtx1 :: Homework1Script
-addrCtx1 = TypedValidator $ toV2 H1.validator
+addrCtr1 :: Homework1Script
+addrCtr1 = TypedValidator $ toV2 H1.validator
 
 type Homework2Script = TypedValidator POSIXTime ()
 
-addrCtx2 :: PubKeyHash -> Homework2Script
-addrCtx2 = TypedValidator . toV2 . H2.validator
+addrCtr2 :: PubKeyHash -> Homework2Script
+addrCtr2 = TypedValidator . toV2 . H2.validator
 
 setupUsers :: Run [PubKeyHash]
 setupUsers = replicateM 3 $ newUser $ ada (Lovelace 1000)
@@ -68,71 +68,65 @@ homework1 cfg = do
     good = testNoErrors (adaValue 10_000_000) cfg
 
 --                  deadline     start        end
-testBeneficiary1 :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()   -- NOTE first battery: spender signed.
+testBeneficiary1 :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()   -- NOTE first battery: donator sig + contract addr.
 testBeneficiary1 deadline startT endT wSlot = do
   users <- setupUsers
-  let [u1, u2, u3] = users  -- [ giver, contract, claimant ]
+  let [u1, u2, u3] = users  -- [ donate, contract, claim ]
       contractInfo = H1.VestingDatum u1 u2 deadline
   testHomework1 u1 u3 contractInfo startT endT wSlot
 
-testBeneficiary2 :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()   -- NOTE second battery: claimant signed.
+testBeneficiary2 :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()   -- NOTE second battery: claim sig + contract addr.
 testBeneficiary2 deadline startT endT wSlot = do
   users <- setupUsers
-  let [u1, u2, u3] = users  -- [ giver, contract, claimant ]
+  let [u1, u2, u3] = users  -- [ donate, contract, claim ]
       contractInfo = H1.VestingDatum u1 u2 deadline
   testHomework1 u2 u3 contractInfo startT endT wSlot
 
-testNoSigning :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()      -- NOTE third battery: no signature from either stakeholders.
+testNoSigning :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()      -- NOTE third battery: no addrs from at least 2 stakeholders.
 testNoSigning deadline startT endT wSlot = do
   users <- setupUsers
-  let [u1, u2, u3]  = users  -- [ giver, contract, claimant ]
+  let [u1, u2, u3]  = users  -- [ donate, contract, claim ]
       contractInfo = H1.VestingDatum u1 u2 deadline
   testHomework1 u3 u3 contractInfo startT endT wSlot
 
 testHomework1 :: PubKeyHash -> PubKeyHash -> H1.VestingDatum -> POSIXTime -> POSIXTime -> Slot -> Run ()
-testHomework1 patronSig claimantSig contractInfo startT endT wSlot = do
+testHomework1 donateSig claimSig contractInfo startT endT wSlot = do
 
-  -- NOTE: 1. Spender sets up the contract.
+  -- NOTE: 1. Donator sets up the contract.
   let amount          = adaValue 100
-      contractBalance = gives patronSig amount addrCtx1
+      contractBalance = donateSig `gives` amount $ addrCtr1
   checkBalance contractBalance $ do
-    sp <- spend patronSig amount                            -- NOTE creates a spending action, and
-    submitTx patronSig (vestingTx1 contractInfo sp amount)  -- NOTE submit Tx with patron's sig.
+    sp <- donateSig `spend` amount                                       -- NOTE creates a spending action, and
+    donateSig `submitTx` (vestingTx1 contractInfo sp amount)             -- NOTE submit Tx with patron's sig.
 
-  -- NOTE hidden time-cost (assuming some time has to pass first before the claimant acts).
+  -- NOTE hidden time-cost (assuming some time has to pass first before the claim acts).
   -- additional note: seems to be related to the `k` of the consensus algorithm. This is a mock so we don't need to wait.
   waitNSlots wSlot
 
   -- NOTE: 2. Claimant attempts to claim the contract.
-  utxos <- utxoAt addrCtx1                       -- NOTE now the claimant looks up the utxo at the contract address.
+  utxos <- utxoAt addrCtr1                                                          -- NOTE now the claim looks up the utxo at the contract address.
   let [(vestRef, vestOut)]  = utxos
-      claimantBalance       = gives                   -- NOTE defines the action to claim/give the contract
-                                addrCtx1
-                                (txOutValue vestOut)
-                                claimantSig
+      claimBalance       = addrCtr1 `gives` (txOutValue vestOut) $ claimSig   -- NOTE defines the action to claim/give the contract
 
-  checkBalance claimantBalance $ do
-    range <- currentTimeInterval startT endT          -- NOTE evaluates the current valid range
-    tx <- validateIn range                            -- NOTE: contract validation.
-              $ claimingTx1                           -- NOTE defines a claiming action to conclude the contract.
-                  claimantSig
-                  contractInfo
-                  vestRef
-                  (txOutValue vestOut)
-    submitTx patronSig tx                             -- NOTE finalizes the tx by signing with patron's sig.
+  checkBalance claimBalance $ do
+    range <- currentTimeInterval startT endT                              -- NOTE evaluates the current valid range
+    tx <- validateIn range                                                -- NOTE: contract validation.
+              $ claimingTx1
+                  claimSig contractInfo vestRef (txOutValue vestOut)   -- NOTE defines a claiming action to conclude the contract.
+    donateSig `submitTx` tx                                              -- NOTE finalizes the tx by signing with patron's sig.
 
 vestingTx1 :: H1.VestingDatum -> UserSpend -> Value -> Tx                 -- NOTE defines the vesting part of the contract
 vestingTx1 contractInfo usp amount =
   mconcat -- the eleemnts are folded into a single Tx.
     [ userSpend usp
-    , payToScript addrCtx1 (HashDatum contractInfo) amount
+    , payToScript addrCtr1 (HashDatum contractInfo) amount
     ]
 
 claimingTx1 :: PubKeyHash -> H1.VestingDatum -> TxOutRef -> Value -> Tx   -- NOTE defines the claiming part of the contract
-claimingTx1 key contractInfo vestRef vestAmount =
+claimingTx1 pkh contractInfo vestRef vestAmount =
   mconcat -- the elements are folded into a single Tx.
-    [ spendScript addrCtx1 vestRef () contractInfo
-    , payToKey key vestAmount
+    [ spendScript addrCtr1 vestRef () contractInfo
+    , payToKey pkh vestAmount
     ]
 
 
@@ -158,28 +152,32 @@ testHomework2 contractInfo startT endT wSlot = do
   users <- setupUsers
   let [u1, u2, _u3] = users
       amount = adaValue 100
+      contractBalance = u1 `gives` amount $ addrCtr2 u2
 
-  checkBalance (gives u1 amount $ addrCtx2 u2) $ do
-    spending <- spend u1 amount
-    submitTx u1 $ vestingTx2 u2 contractInfo spending amount
+  checkBalance contractBalance $ do
+    sp <- u1 `spend` amount
+    u1 `submitTx` (vestingTx2 u2 contractInfo sp amount)
   waitNSlots wSlot
-  utxos <- utxoAt $ addrCtx2 u2
+  utxos <- utxoAt $ addrCtr2 u2
   let [(vestRef, vestOut)] = utxos
-  checkBalance (gives (addrCtx2 u2) (txOutValue vestOut) u2) $ do
+      claimBalance      = (addrCtr2 u2) `gives` (txOutValue vestOut) $ u2
+  checkBalance claimBalance $ do
     range <- currentTimeInterval startT endT
-    tx <- validateIn range $ claimingTx2 u2 contractInfo vestRef (txOutValue vestOut)
-    submitTx u2 tx
+    tx <- validateIn range
+              $ claimingTx2
+                  u2 contractInfo vestRef (txOutValue vest)
+    u2 `submitTx` tx
 
 vestingTx2 :: PubKeyHash -> POSIXTime -> UserSpend -> Value -> Tx
-vestingTx2 key contractInfo usp amount =
+vestingTx2 pkh contractInfo usp amount =
   mconcat
     [ userSpend usp
-    , payToScript (addrCtx2 key) (HashDatum contractInfo) amount
+    , payToScript (addrCtr2 pkh) (HashDatum contractInfo) amount
     ]
 
 claimingTx2 :: PubKeyHash -> POSIXTime -> TxOutRef -> Value -> Tx
-claimingTx2 claimantSig contractInfo vestRef vestAmount =
+claimingTx2 claimSig contractInfo vestRef vestAmount =
   mconcat
-    [ spendScript (addrCtx2 claimantSig) vestRef () contractInfo
-    , payToKey claimantSig vestAmount
+    [ spendScript (addrCtr2 claimSig) vestRef () contractInfo
+    , payToKey claimSig vestAmount
     ]
