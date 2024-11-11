@@ -45,15 +45,15 @@ homework1 cfg = do
     "Testing Homework1"
     [ testGroup
         "Stakeholder 1 signing"
-        [ good "Deadline: 6000; TxValidRange (5000, 5999)" $ testStakeholder1 6000 (-999) 0     0
-        , good "Deadline: 6000; TxValidRange (5000, 6000)" $ testStakeholder1 6000 (-999) 1     0
+        [ good "Deadline: 6000; TxValidRange (5000, 5999)" $ testStakeholder1 6000 (-999)    0  0
+        , good "Deadline: 6000; TxValidRange (5000, 6000)" $ testStakeholder1 6000 (-999)    1  0
         , good "Deadline: 6000; TxValidRange (5000, 6999)" $ testStakeholder1 6000 (-999) 1000  0
-        , good "Deadline: 6000; TxValidRange (5999, 6001)" $ testStakeholder1 6000 0      2     0
-        , good "Deadline: 6000; TxValidRange (6999, 6999)" $ testStakeholder1 6000 0      0     1
-        , bad  "Deadline: 6000; TxValidRange (7000, 8000)" $ testStakeholder1 6000 1      1001  1
+        , good "Deadline: 6000; TxValidRange (5999, 6001)" $ testStakeholder1 6000     0     2  0
+        , good "Deadline: 6000; TxValidRange (6999, 6999)" $ testStakeholder1 6000     0     0  1
+        , bad  "Deadline: 6000; TxValidRange (7000, 8000)" $ testStakeholder1 6000     1  1001  1
         , bad  "Deadline: 6000; TxValidRange (5000, 7000)" $ testStakeholder1 6000 (-999) 1001  0
-        , bad  "Deadline: 6000; TxValidRange (6000, 7000)" $ testStakeholder1 6000 (-999) 1     1
-        , bad  "Deadline: 6000; TxValidRange (6999, 7000)" $ testStakeholder1 6000 0      1     1
+        , bad  "Deadline: 6000; TxValidRange (6000, 7000)" $ testStakeholder1 6000 (-999)    1  1
+        , bad  "Deadline: 6000; TxValidRange (6999, 7000)" $ testStakeholder1 6000     0     1  1
         ]
     , testGroup
         "Stakeholder 2 signing"
@@ -62,7 +62,7 @@ homework1 cfg = do
         , bad  "Deadline: 6000; TxValidRange (5000, 5999)" $ testStakeholder2 6000 (-999) 0 0
         , bad  "Deadline: 5000; TxValidRange (5000, 6000)" $ testStakeholder2 5000 (-999) 1 0
         , bad  "Deadline: 5000; TxValidRange (5001, 6000)" $ testStakeholder2 5000 (-998) 1 0
-        , bad  "Deadline: 5000; TxValidRange (5999, 6000)" $ testStakeholder2 5000 0 1 0
+        , bad  "Deadline: 5000; TxValidRange (5999, 6000)" $ testStakeholder2 5000 0      1 0
         ]
     , bad "None signing" $ testNoSigning 5000 0 0 0 -- fails if no sigs are found
     ]
