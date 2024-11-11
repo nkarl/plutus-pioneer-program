@@ -27,16 +27,16 @@ main = do
 setupUsers :: Run [PubKeyHash]
 setupUsers = replicateM 3 $ newUser $ ada (Lovelace 1000)
 
-type Homework1Script = TypedValidator H1.VestingDatum ()
---
--- NOTE: 0. contract is already written.
-addrCtr1 :: Homework1Script
+type HW1Script = TypedValidator H1.VestingDatum ()
+
+-- NOTE 0. contract is already written.
+addrCtr1 :: HW1Script
 addrCtr1 = TypedValidator $ toV2 H1.validator
 
 {-
  - TODO: try to change the logic of test suite and validator script to address the following questions
  - [ ] Why are the POSIXTime input are negative? They don't match the valid range in the test's title.
- - [ ] Why is fund claim ends with a tx signed by the Giver's sig? Isn't it supposed to signed with the Taker's sig?
+ - [ ] Why is fund claim ends with a tx signed by the Giver's sig? Shouldn't it be signed with the Taker's sig?
 -}
 
 homework1 :: MockConfig -> TestTree
@@ -70,6 +70,7 @@ homework1 cfg = do
     bad msg = good msg . mustFail
     good = testNoErrors (adaValue 10_000_000) cfg
 
+-- NOTE: test function for Stakeholder 1
 --                  deadline     start        end
 testStakeholder1 :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()   -- NOTE first battery: Giver sig + Contract addr.
 testStakeholder1 deadline startT endT wSlot = do
@@ -78,6 +79,7 @@ testStakeholder1 deadline startT endT wSlot = do
       ctrRequirements = H1.VestingDatum u1 u2 deadline
   testHomework1 u1 u3 ctrRequirements startT endT wSlot
 
+-- NOTE: test function for Stakeholder 2
 testStakeholder2 :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()   -- NOTE second battery: Contract addr + Taker sig.
 testStakeholder2 deadline startT endT wSlot = do
   users <- setupUsers
@@ -85,6 +87,7 @@ testStakeholder2 deadline startT endT wSlot = do
       ctrRequirements = H1.VestingDatum u1 u2 deadline
   testHomework1 u2 u3 ctrRequirements startT endT wSlot
 
+-- NOTE: test function for no sigs
 testNoSigning :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()      -- NOTE third battery: not (Contract addr + Stakeholder sig).
 testNoSigning deadline startT endT wSlot = do
   users <- setupUsers
@@ -92,10 +95,11 @@ testNoSigning deadline startT endT wSlot = do
       ctrRequirements = H1.VestingDatum u1 u2 deadline
   testHomework1 u3 u3 ctrRequirements startT endT wSlot
 
+-- NOTE: test function for HW1
 testHomework1 :: PubKeyHash -> PubKeyHash -> H1.VestingDatum -> POSIXTime -> POSIXTime -> Slot -> Run ()
 testHomework1 giverSig takerSig ctrRequirements startT endT wSlot = do
 
-  -- NOTE: 1. Giver u1 sets up the Contract u2.
+  -- NOTE 1. Giver u1 sets up the Contract u2.
   let amount          = adaValue 100
       ctr             = addrCtr1
       contractBalance = giverSig `gives` amount $ ctr
@@ -103,10 +107,11 @@ testHomework1 giverSig takerSig ctrRequirements startT endT wSlot = do
     spendingAction <- giverSig `spend` amount                               -- NOTE creates a spending action, and
     giverSig `submitTx` (vestingTx1 ctrRequirements spendingAction amount)  -- NOTE submit Tx with Giver's sig.
 
-  waitNSlots wSlot -- NOTE hidden time-cost (assuming some time needs to pass before u3 acts on claiming).
+  -- NOTE hidden time-cost (assuming some time needs to pass before u3 acts on claiming).
+  waitNSlots wSlot
   -- additional note: related to the `k` of the consensus algorithm. This is a mock config so we don't need to wait.
 
-  -- NOTE: 2. Taker u3 attempts to claim the Contract u2.
+  -- NOTE 2. Taker u3 attempts to claim the Contract u2.
   utxos <- utxoAt ctr                                                       -- NOTE the Taker looks up the utxos at the Contract address.
   let [(vestRef, vestOut)] = utxos
       claimBalance = ctr `gives` (txOutValue vestOut) $ takerSig            -- NOTE defines the action to spend/give the Contract to the Taker
@@ -119,6 +124,7 @@ testHomework1 giverSig takerSig ctrRequirements startT endT wSlot = do
     giverSig `submitTx` tx                                                  -- NOTE finalizes the tx by signing with Giver's sig.
     -- Possible BUG: shouldn't the tx be signed with sig of the Taker?
 
+-- NOTE: vesting
 vestingTx1 :: H1.VestingDatum -> UserSpend -> Value -> Tx                   -- NOTE defines the vesting part of the contract
 vestingTx1 ctrRequirements usp amount =
   mconcat -- the eleemnts are folded into a single Tx.
@@ -126,6 +132,7 @@ vestingTx1 ctrRequirements usp amount =
     , payToScript addrCtr1 (HashDatum ctrRequirements) amount
     ]
 
+-- NOTE: claiming
 claimingTx1 :: PubKeyHash -> H1.VestingDatum -> TxOutRef -> Value -> Tx     -- NOTE defines the claiming part of the contract
 claimingTx1 pkh ctrRequirements vestRef vestAmount =
   mconcat -- the elements are folded into a single Tx.
@@ -133,9 +140,9 @@ claimingTx1 pkh ctrRequirements vestRef vestAmount =
     , payToKey pkh vestAmount
     ]
 
-type Homework2Script = TypedValidator POSIXTime ()
+type HW2Script = TypedValidator POSIXTime ()
 
-addrCtr2 :: PubKeyHash -> Homework2Script
+addrCtr2 :: PubKeyHash -> HW2Script
 addrCtr2 = TypedValidator . toV2 . H2.validator
 
 homework2 :: MockConfig -> TestTree

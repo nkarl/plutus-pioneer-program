@@ -51,6 +51,7 @@
 </head>
 
 <body>
+    <!-- Upper div -->
     <div class="container-fluid">
         <div class="row">
             <div class="col">
@@ -66,7 +67,7 @@
                             <td>
                                 <span id="cardanoPKH"></span>
                                 <button class="btn btn-outline-primary btn-sm" type="button"
-                                    id="cardanoPKHButton"></button>
+                                    id="cardanoPKHButton">\t</button>
                             </td>
                             <td id="cardanoBalance"></td>
                         </tr>
@@ -74,10 +75,14 @@
                 </table>
             </div>
         </div>
+
+        <!-- Bottom div -->
         <div class="row">
+            <!-- NOTE: smart contract panel. -->
             <div class="col-4">
                 <div class="accordion" id="actions">
 
+                    <!-- Vesting panel -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingVest">
                             <button class="accordion-button" type="button" data-bs-toggle="collapse"
@@ -99,6 +104,7 @@
                         </div>
                     </div>
 
+                    <!-- Claim panel -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingClaim">
                             <button class="accordion-button" type="button" data-bs-toggle="collapse"
@@ -118,8 +124,9 @@
 
                 </div>
             </div>
-            <div class="col-8">
 
+            <!-- NOTE: Tx table. Contains all tx at this smart contract's address. -->
+            <div class="col-8">
                 <table class="table table-sm table-bordered">
                     <caption>UTxO's on Cardano</caption>
                     <thead>
@@ -131,6 +138,7 @@
                         </tr>
                     </thead>
                     <tbody id="vestingUTxOsTable">
+
                     </tbody>
                 </table>
 

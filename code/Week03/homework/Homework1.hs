@@ -32,8 +32,8 @@ unstableMakeIsData ''VestingDatum
 
 {-# INLINABLE mkValidator #-}
 -- This should validate if
---  - either  stakeholder1 has signed the transaction and the current slot is before or at the deadline
---  - or      stakeholder2 has signed the transaction and the deadline has passed.
+--  - either  (stakeholder1 has signed the transaction) and (the current slot is before or at the deadline)
+--  - or      (stakeholder2 has signed the transaction) and (the deadline has passed)
 mkValidator :: VestingDatum -> () -> ScriptContext -> Bool
 mkValidator contract () ctx =
     ((traceIfFalse "stakeholder 1's signature missing" $ isSigned $ stakeholder1 contract)

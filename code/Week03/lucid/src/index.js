@@ -16,7 +16,7 @@ const blockfrost = {
     url: "https://cardano-preview.blockfrost.io/api/v0",
     id: process.env.BLOCKFROST_PROJECT_ID
 };
-console.log(blockfrost);
+// console.log(blockfrost);
 
 const VestingDatum = L.Data.Object({
     beneficiary: L.Data.String,
@@ -24,31 +24,32 @@ const VestingDatum = L.Data.Object({
 });
 
 /**
- * loads the nami wallet. Requires
- *  - Nami walllet chrome extension installed.
+ * NOTE: loads the nami wallet. Requires
+ *  - Nami walllet chrome extension.
  *  - Blockfrost API credentials.
  */
 async function connectNamiWallet() {
-    const namiWallet = window.cardano.nami;
-    if (!namiWallet) {
+    const nami = window.cardano.nami;
+    if (nami === undefined) {
         setTimeout(connectNamiWallet);
     } else {
-        const api = await namiWallet.enable();
+        const namiApi = await nami.enable();
+        const provider = new L.Blockfrost(blockfrost.url, blockfrost.id);
         /* DEBUG */ console.log('show nami enabled');
-        const lucid =
-            await L.Lucid.new(
-                new L.Blockfrost(blockfrost.url, blockfrost.id),
-                "Preview",
-            );
+        const lucid = L.Lucid.new().then(a => {
+            a.provider = provider;
+            a.network = "Preview";
+            a.selectWallet(namiApi);
+            return a;
+        });
         /* DEBUG */ console.log("show lucid promise object details");
         /* DEBUG */ console.log(lucid);
         /* DEBUG */ console.log('show lucid active');
-        lucid.selectWallet(api);
         return lucid;
     }
 }
 
-// NOTE Tx action
+//// NOTE Tx action
 async function submitCardanoTx(signedTx) {
     const tid = await signedTx.submit();
     /* DEBUG */ console.log("show Cardano tx submitted: " + tid);
@@ -65,9 +66,9 @@ async function signAndSubmitCardanoTx(tx) {
     }
 }
 
-// NOTE Tx action
+//// NOTE Tx action
 async function getCardanoPKH() {
-    const addr = await lucid.wallet.address();
+    const addr = await window.lucid.wallet.address();
     const details = L.getAddressDetails(addr);
     /* DEBUG */ console.log("show address details");
     /* DEBUG */ console.log(details);
@@ -75,15 +76,15 @@ async function getCardanoPKH() {
 }
 
 /**
- * - queries the wallet information:
- *   - Pub key hash
- *   - UTxOs at the wallet address
- * - map+reduce the total fund in Lovelace at from the UTxOs
- *   - 
+ * NOTE: queries the wallet information.
+ * Returns an object that contains
+ *  - Pub key hash
+ *  - the total fund in Lovelace unit at the Wallet address (mapped and reduced)
+ *  - the UTxOs at the Smart Contract address
  */
 async function queryWalletInfo() {
     const pkh = await getCardanoPKH();
-    const utxos = await lucid.wallet.getUtxos();
+    const utxos = await window.lucid.wallet.getUtxos();
     /* DEBUG */ console.log("show details of utxos from pkh");
     /* DEBUG */ console.log(utxos);
     const lovelace = utxos.reduce((acc, utxo) => acc + utxo.assets.lovelace, 0n);
@@ -97,14 +98,14 @@ async function queryWalletInfo() {
     };
 }
 
-// NOTE UTxO table action
+//// NOTE modifies UI, UTxO table
 function addCell(tr, content) {
     const td = document.createElement('td');
     tr.appendChild(td);
     td.appendChild(document.createTextNode(content));
 }
 
-// NOTE UTxO table action
+//// NOTE modifies UI, UTxO table
 function addLinkToTable(tableId, href, text) {
     const txTable = document.getElementById('cardanoTxTable');
     const tr = document.createElement('tr');
@@ -118,7 +119,7 @@ function addLinkToTable(tableId, href, text) {
     a.appendChild(document.createTextNode(text));
 }
 
-// NOTE UTxO table action
+//// NOTE modifies UI, UTxO table
 function addCopyCell(row, text) {
     const td = document.createElement("td");
     row.appendChild(td);
@@ -128,6 +129,7 @@ function addCopyCell(row, text) {
     span.setAttribute("id", uid);
     span.appendChild(document.createTextNode(text));
     const button = document.createElement("button");
+    //button.innerText("\t");
     td.appendChild(button);
     button.setAttribute("type", "button");
     button.classList.add("btn");
@@ -136,14 +138,14 @@ function addCopyCell(row, text) {
     button.addEventListener("click", () => onCopy(uid));
 }
 
-// NOTE UTxO table action
+//// NOTE modifies UI, UTxO table
 function removeChildren(elt) {
     while (elt.firstChild) {
         elt.removeChild(elt.lastChild);
     }
 }
 
-// NOTE Tx table action
+//// NOTE updates UI
 async function loadWalletUI() {
     const status = await queryWalletInfo();
 
@@ -171,7 +173,7 @@ async function loadWalletUI() {
 }
 
 /**
- * retrieves all valid (containing a datum) UTxOs at the smart contract address.
+ * retrieves all valid UTxOs (containing a datum) at the smart contract address.
  */
 async function vestingUTxOs() {
     const utxos = await lucid.utxosAt(vestingAddress);
@@ -187,7 +189,7 @@ async function vestingUTxOs() {
                 const d = L.Data.from(datum, VestingDatum);
                 res.push({ utxo: utxo, datum: d });
             } catch (err) {
-              console.log("error: unable to convert from CBOR object (could be a Map object)");
+                console.log("error: unable to convert from CBOR object (could be a Map object)");
             }
         }
     }
@@ -199,10 +201,11 @@ async function vestingUTxOs() {
 async function findUTxO(ref) {
     const chunks = ref.split('#');
     const tid = chunks[0];
-    const ix = parseInt(chunks[1]);
+    const idx = parseInt(chunks[1]);
     const utxos = await vestingUTxOs();
     for (const utxo of utxos) {
-        if (utxo.utxo.txHash == tid && utxo.utxo.outputIndex == ix) {
+        if (utxo.utxo.txHash == tid &&
+            utxo.utxo.outputIndex == idx) {
             return utxo;
         }
     }
@@ -212,10 +215,14 @@ async function findUTxO(ref) {
 async function onVest() {
     const beneficiaryText = document.getElementById('vestBeneficiaryText');
     const beneficiary = beneficiaryText.value;
+    console.log(beneficiary);
     const amountText = document.getElementById('vestAmountText');
     const amount = BigInt(parseInt(amountText.value));
+    console.log(amount);
     const deadlineText = document.getElementById('vestDeadlineText');
+    console.log(deadlineText.value);
     const deadline = BigInt(Date.parse(deadlineText.value));
+    console.log(deadline);
 
     const d = {
         beneficiary: beneficiary,
@@ -264,12 +271,13 @@ window.L = L;
 // console.log("show window.L (Lucid) API object");
 // console.log(window.L);
 
-// NOTE: 1. connect wallet
+//// NOTE: 1. connect wallet
 window.lucid = await connectNamiWallet();
 // console.log("show window.lucid object with Nami wallet enabled");
 // console.log(window.lucid);
 
-const vestingAddress = lucid.utils.validatorToAddress(vestingScript);
+const vestingAddress = window.lucid.utils.validatorToAddress(vestingScript);
+console.log("vestingAddress:", vestingAddress);
 
 $(function() {
     $(".dtp").datetimepicker({
@@ -279,11 +287,11 @@ $(function() {
     });
 });
 
-// NOTE: 2. load UI
+//// NOTE: 2. load UI
 loadWalletUI();
 //setInterval(loadWalletUI, 5000); // NOTE disabled to prevent flooding request cap of blockfrost api.
 
-// NOTE: 3. hook up button actions for vesting, claiming, and copying PKH
+//// NOTE: 3. hook up button actions for vesting, claiming, and copying PKH
 document.getElementById("vestButton").addEventListener("click", onVest);
 document.getElementById("claimButton").addEventListener("click", onClaim);
 document.getElementById('cardanoPKHButton').addEventListener("click", () => onCopy("cardanoPKH"));

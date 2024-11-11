@@ -30,12 +30,12 @@ data VestingDatum = VestingDatum
 -- makeLift ''Requirements
 makeLift ''VestingDatum
 
-{-# INLINABLE mkParameterizedVestingValidator #-}
+{-# INLINABLE mkValidator #-}
 -- This should validate if the transaction has
 --  - both  a signature from the parameterized stakeholder
 --  - and   the deadline has passed.
-mkParameterizedVestingValidator :: PubKeyHash -> POSIXTime -> () -> ScriptContext -> Bool
-mkParameterizedVestingValidator _stakeholder _deadline () ctx =
+mkValidator :: PubKeyHash -> POSIXTime -> () -> ScriptContext -> Bool
+mkValidator _stakeholder _deadline () ctx =
     (traceIfFalse "stakeholder's signature missing" $ isSigned _stakeholder)
     &&
     traceIfFalse "deadline not reached" deadlineReached
@@ -48,14 +48,12 @@ mkParameterizedVestingValidator _stakeholder _deadline () ctx =
 
     deadlineReached :: Bool
     deadlineReached = (from $ _deadline) `contains` txInfoValidRange ctxInfo
-    --deadlineReached = _deadline `before` txInfoValidRange ctxInfo  -- BUG: not working
+    --deadlineReached = _deadline `before` txInfoValidRange ctxInfo       -- BUG: not working
     --deadlineReached = (flip after (txInfoValidRange ctxInfo)) _deadline -- BUG: not working
 
 {-# INLINABLE  e #-}
 e :: PubKeyHash -> BuiltinData -> BuiltinData -> BuiltinData -> ()
-e = wrapValidator . mkParameterizedVestingValidator
+e = wrapValidator . mkValidator
 
 validator :: PubKeyHash -> Validator
-validator stakeholder = mkValidatorScript ($$(compile [|| e ||]) <**> liftCode stakeholder)
-  where
-    (<**>) = applyCode
+validator pkh = mkValidatorScript ($$(compile [|| e ||]) `applyCode` liftCode pkh)
