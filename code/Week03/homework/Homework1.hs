@@ -22,9 +22,9 @@ import           Utilities            (wrapValidator)
 
 -- data Requirements = Requirements
 data VestingDatum = VestingDatum
-    { stakeholder1 :: PubKeyHash
-    , stakeholder2 :: PubKeyHash
-    , deadline     :: POSIXTime
+    { redeemer1 :: PubKeyHash
+    , redeemer2 :: PubKeyHash
+    , deadline  :: POSIXTime
     }
 
 -- unstableMakeIsData ''Requirements
@@ -32,15 +32,15 @@ unstableMakeIsData ''VestingDatum
 
 {-# INLINABLE mkValidator #-}
 -- This should validate if
---  - either  (stakeholder1 has signed the transaction) and (the current slot is before or at the deadline)
---  - or      (stakeholder2 has signed the transaction) and (the deadline has passed)
+--  - either  (redeemer1 has signed the transaction) and (the current slot is before or at the deadline)
+--  - or      (redeemer2 has signed the transaction) and (the deadline has passed)
 mkValidator :: VestingDatum -> () -> ScriptContext -> Bool
-mkValidator contract () ctx =
-    (traceIfFalse "stakeholder 1's signature missing" (isSigned $ stakeholder1 contract)
-        && traceIfFalse "deadline is passed" (isNotAfterDeadline contract))
+mkValidator datum () ctx =
+    (traceIfFalse "stakeholder 1's signature missing" (isSigned $ redeemer1 datum)
+        && traceIfFalse "deadline is passed" (isNotAfterDeadline datum))
     ||
-    (traceIfFalse "stakeholder 2's signature missing" (isSigned $ stakeholder2 contract)
-        && traceIfFalse "deadline is not reached" (isAfterDeadline contract))
+    (traceIfFalse "stakeholder 2's signature missing" (isSigned $ redeemer2 datum)
+        && traceIfFalse "deadline is not reached" (isAfterDeadline datum))
   where
     ctxInfo :: TxInfo
     ctxInfo = scriptContextTxInfo ctx

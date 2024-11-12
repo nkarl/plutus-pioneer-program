@@ -36,9 +36,9 @@ library
     hs-source-dirs:     lecture
                       , homework
     exposed-modules:    Homework1
-                        Homework2
-                        ParameterizedVesting
-                        Vesting
+                      , Homework2
+                      , ParameterizedVesting
+                      , Vesting
 
 test-suite week03-homework
     import:             common-all-tests
