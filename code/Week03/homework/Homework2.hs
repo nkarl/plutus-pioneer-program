@@ -14,7 +14,7 @@ import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTime, PubKeyHash,
                                        from, mkValidatorScript)
 import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import           PlutusTx             (applyCode, compile, liftCode, makeLift)
-import           PlutusTx.Prelude     (Bool (..), (.), ($), (&&), traceIfFalse)
+import           PlutusTx.Prelude     (Bool (..), (.), (&&), traceIfFalse)
 import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------

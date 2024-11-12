@@ -36,7 +36,8 @@ validator1 = TypedValidator $ toV2 H1.validator
 {-
  - TODO: try to change the logic of test suite and validator script to address the following questions
  - [ ] Why are the POSIXTime input are negative? They don't match the valid range in the test's title.
- - [ ] Why is fund claim ends with a tx signed by the Giver's sig? Shouldn't it be signed with the Taker's sig?
+ - [x] Why is fund claim ends with a tx signed by the Giver's sig? Shouldn't it be signed with the Taker's sig?
+      - the spending action has access to PKH of Giver and PKH of Contract.
 -}
 
 homework1 :: MockConfig -> TestTree
@@ -72,7 +73,7 @@ homework1 cfg = do
 
 -- NOTE: test function for Redeemer 1 (Giver)
 -- 1. Giver sets up and signs Contract.
--- 2. the spending process has access to PKHs of Giver and Contract, and Datum.
+-- 2. the spending process has access to Datum and PKHs of Giver and Contract.
 -- 3. the spending process signs with PKH of Giver, and spends the Contract on Taker.
 testHW1_giverSpends :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()
 testHW1_giverSpends deadline startT endT wSlot = do
@@ -83,7 +84,7 @@ testHW1_giverSpends deadline startT endT wSlot = do
 
 -- NOTE: test function for Redeemer 2 (Taker)
 -- 1. Giver sets up and signs Contract.
--- 2. the spending process has access to PKH of Contract and Datum.
+-- 2. the spending process has access to Datum and only PKH of Contract.
 -- 3. the spending process signs with PKH of Contract, and spends the Contract on Taker.
 testHW1_takerClaims :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()
 testHW1_takerClaims deadline startT endT wSlot = do
@@ -93,7 +94,7 @@ testHW1_takerClaims deadline startT endT wSlot = do
   testHW1 contract taker datum startT endT wSlot
 
 -- NOTE: test function for incorrect number of signatures.
--- Taker has access to nothing except for Datum.
+-- Taker has access to Datum only, and nothing else.
 testHW1_noSigning :: POSIXTime -> POSIXTime -> POSIXTime -> Slot -> Run ()
 testHW1_noSigning deadline startT endT wSlot = do
   users <- setupUsers
@@ -109,12 +110,12 @@ testHW1 redeemerGiver redeemerTaker datum startT endT wSlot = do
   let amount = adaValue 100
       ctrBalance = redeemerGiver `gives` amount $ validator1
   checkBalance ctrBalance $ do
-    spendAction <- redeemerGiver `spend` amount                 -- NOTE creates a spending action, and
-    redeemerGiver `submitTx` vestingTx1 spendAction amount      -- NOTE submit Tx with Giver's sig.
+    spending <- redeemerGiver `spend` amount                 -- NOTE creates a spending action, and
+    redeemerGiver `submitTx` vestingTx1 spending amount      -- NOTE submit Tx with Giver's sig.
 
   -- NOTE hidden time-cost (assuming some time needs to pass before taker acts on claiming).
   waitNSlots wSlot
-  -- additional note: related to the `k` of the consensus algorithm. This is a mock config so we don't need to wait.
+  -- additional note: related to the `k` of the consensus algorithm. This is a mock config so we don't need to wait too long.
 
   -- NOTE 2. Taker attempts to spend the Contract at the validator.
   utxos <- utxoAt validator1                                    -- NOTE the Taker looks up the utxos at the Contract address.
@@ -132,9 +133,9 @@ testHW1 redeemerGiver redeemerTaker datum startT endT wSlot = do
   where
   -- NOTE: composes the Vesting Tx
   vestingTx1 :: UserSpend -> Value -> Tx 
-  vestingTx1 spendAction amount =
+  vestingTx1 spending amount =
     mconcat -- the eleemnts are folded into a single Tx.
-      [ userSpend spendAction
+      [ userSpend spending
       , payToScript validator1 (HashDatum datum) amount
       ]
 
