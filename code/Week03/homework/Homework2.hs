@@ -14,7 +14,7 @@ import           Plutus.V2.Ledger.Api (BuiltinData, POSIXTime, PubKeyHash,
                                        from, mkValidatorScript)
 import           Plutus.V2.Ledger.Contexts (txSignedBy)
 import           PlutusTx             (applyCode, compile, liftCode, makeLift)
-import           PlutusTx.Prelude     (Bool (..), (.), ($), (&&), traceIfFalse)
+import           PlutusTx.Prelude     (Bool (..), (.), (&&), traceIfFalse)
 import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------
@@ -22,9 +22,9 @@ import           Utilities            (wrapValidator)
 
 -- data Requirements = Requirements
 data VestingDatum = VestingDatum
-    { stakeholder1 :: PubKeyHash
-    , stakeholder2 :: PubKeyHash
-    , deadline     :: POSIXTime
+    { redeemer1 :: PubKeyHash
+    , redeemer2 :: PubKeyHash
+    , deadline  :: POSIXTime
     }
 
 -- makeLift ''Requirements
@@ -32,11 +32,11 @@ makeLift ''VestingDatum
 
 {-# INLINABLE mkValidator #-}
 -- This should validate if the transaction has
---  - both  a signature from the parameterized stakeholder
+--  - both  a signature from the parameterized redeemer
 --  - and   the deadline has passed.
 mkValidator :: PubKeyHash -> POSIXTime -> () -> ScriptContext -> Bool
-mkValidator _stakeholder _deadline () ctx =
-    (traceIfFalse "stakeholder's signature missing" $ isSigned _stakeholder)
+mkValidator _redeemer _deadline () ctx =
+    traceIfFalse "redeemer's signature missing" (isSigned _redeemer)
     &&
     traceIfFalse "deadline not reached" deadlineReached
   where
@@ -47,7 +47,7 @@ mkValidator _stakeholder _deadline () ctx =
     isSigned = txSignedBy ctxInfo
 
     deadlineReached :: Bool
-    deadlineReached = (from $ _deadline) `contains` txInfoValidRange ctxInfo
+    deadlineReached = from _deadline `contains` txInfoValidRange ctxInfo
     --deadlineReached = _deadline `before` txInfoValidRange ctxInfo       -- BUG: not working
     --deadlineReached = (flip after (txInfoValidRange ctxInfo)) _deadline -- BUG: not working
 
