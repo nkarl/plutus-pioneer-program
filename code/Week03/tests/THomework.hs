@@ -35,7 +35,7 @@ validator1 = TypedValidator $ toV2 H1.validator
 
 {-
  - TODO: try to change the logic of test suite and validator script to address the following questions
- - [ ] Why are the POSIXTime input are negative? They don't match the valid range in the test's title.
+ - [ ] Why are the POSIXTime input negative? They don't match the valid range in the test's title.
  - [x] Why is fund claim ends with a tx signed by the Giver's sig? Shouldn't it be signed with the Taker's sig?
       - the spending action has access to PKH of Giver and PKH of Contract.
 -}
